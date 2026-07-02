@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI Studio Next</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(145deg,#f0f4ff 0%,#e6edfa 100%);min-height:100vh;padding:16px;color:#1e293b}
+#loader{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.6s ease}
+#loader.hidden{opacity:0;pointer-events:none}
+.loader-spinner{width:60px;height:60px;border-radius:50%;border:6px solid rgba(255,255,255,0.2);border-top:6px solid #fff;animation:spin 0.8s linear infinite}
+.loader-text{margin-top:20px;color:#fff;font-size:20px;letter-spacing:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#app{max-width:1600px;margin:0 auto;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);border-radius:32px;padding:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);min-height:90vh}
+header{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,0.05);margin-bottom:20px}
+.logo{font-size:24px;font-weight:700;background:linear-gradient(135deg,#4f46e5,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.toolbar button{margin-left:10px;padding:8px 16px;border:none;background:rgba(255,255,255,0.7);backdrop-filter:blur(4px);border-radius:12px;cursor:pointer;font-weight:500;transition:all 0.2s}
+.toolbar button:hover{background:rgba(255,255,255,0.9);box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+.dev-btn.active{background:#22c55e;color:#fff}
+.main-layout{display:grid;grid-template-columns:240px 1fr 300px;gap:20px;height:calc(90vh - 80px)}
+@media (max-width:1024px){.main-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;height:auto}}
+.panel-left,.panel-center,.panel-right{background:rgba(255,255,255,0.7);backdrop-filter:blur(8px);border-radius:20px;padding:16px;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,0.5);box-shadow:0 4px 16px rgba(0,0,0,0.02)}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:600}
+.upload-btn{background:#4f46e5;color:#fff;border:none;padding:4px 12px;border-radius:8px;cursor:pointer}
+.file-tree{flex:1;overflow-y:auto;padding-right:4px}
+.file-tree .file-item{padding:6px 8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s}
+.file-tree .file-item:hover{background:rgba(79,70,229,0.08)}
+.file-tree .file-item.active{background:rgba(79,70,229,0.15)}
+.file-tree .dir-item{font-weight:500;color:#4b5563}
+.empty-state{color:#94a3b8;text-align:center;padding:40px 0;font-size:14px}
+.panel-footer{display:flex;gap:8px;margin-top:12px}
+.panel-footer button{flex:1;padding:6px;border:none;background:rgba(0,0,0,0.03);border-radius:8px;cursor:pointer;font-size:12px}
+.panel-center{padding:12px}
+.editor-header{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;color:#4b5563}
+#codeEditor{flex:1;width:100%;font-family:'Courier New',monospace;font-size:14px;padding:12px;border:none;border-radius:12px;background:rgba(255,255,255,0.5);resize:none;outline:none}
+.ai-shortcuts{display:flex;gap:8px;margin:12px 0 8px}
+.ai-shortcuts button{padding:4px 14px;border:none;border-radius:8px;background:rgba(79,70,229,0.1);color:#4f46e5;cursor:pointer;font-size:12px;font-weight:500}
+.ai-result{background:rgba(0,0,0,0.02);border-radius:12px;padding:10px;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-size:13px}
+.panel-right{padding:12px}
+.chat-box{flex:1;overflow-y:auto;background:rgba(255,255,255,0.3);border-radius:12px;padding:12px;margin-bottom:12px;min-height:200px}
+.empty-chat{color:#94a3b8;text-align:center;padding:40px 0}
+.chat-input-area{display:flex;gap:8px}
+.chat-input-area textarea{flex:1;border:1px solid rgba(0,0,0,0.05);border-radius:12px;padding:8px;resize:none;font-family:inherit;background:rgba(255,255,255,0.5)}
+.chat-input-area button{padding:8px 16px;border:none;background:#4f46e5;color:#fff;border-radius:12px;cursor:pointer}
+.chat-tools{display:flex;gap:8px;margin-top:8px}
+.chat-tools button{flex:1;padding:4px;border:none;background:rgba(0,0,0,0.03);border-radius:8px;font-size:12px;cursor:pointer}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal.hidden{display:none}
+.modal-content{background:#fff;border-radius:24px;padding:28px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto}
+.modal-content h2,.modal-content h3{margin-bottom:12px}
+.modal-content label{display:block;margin:10px 0}
+.modal-content input,.modal-content select{width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px}
+.modal-content button{margin-top:8px;padding:8px 20px;border:none;background:#4f46e5;color:#fff;border-radius:8px;cursor:pointer}
+#testResult{margin-top:10px;padding:8px;border-radius:8px;background:#f1f5f9}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+.chat-msg{margin-bottom:10px}
+.chat-msg.user{text-align:right}
+.chat-msg.assistant{text-align:left}
+.chat-bubble{display:inline-block;padding:8px 14px;border-radius:16px;max-width:80%;background:#e2e8f0}
+.chat-msg.user .chat-bubble{background:#4f46e5;color:#fff}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-spinner"></div><div class="loader-text">正在启动 AI Studio ...</div></div>
+<div id="app">
+<header>
+<div class="logo">⚡ AI Studio Next</div>
+<div class="toolbar">
+<button onclick="toggleDev()" id="devBtn" class="dev-btn">🔧 开发者</button>
+<button onclick="openSettings()">⚙️ 设置</button>
+</div>
+</header>
+<div class="main-layout">
+<aside class="panel-left">
+<div class="panel-header"><span>📁 资源</span><button onclick="document.getElementById('fileInput').click()" class="upload-btn">📤 上传</button><input type="file" id="fileInput" style="display:none" multiple onchange="handleUpload()"></div>
+<div id="fileTree" class="file-tree"><div class="empty-state">上传文件或 ZIP 开始</div></div>
+<div class="panel-footer"><button onclick="downloadWorkspace()">📥 下载全部</button><button onclick="clearWorkspace()">🗑️ 清空</button></div>
+</aside>
+<main class="panel-center">
+<div class="editor-header"><span id="currentFile">未选择文件</span><button onclick="saveCurrentFile()">💾 保存</button></div>
+<textarea id="codeEditor" spellcheck="false"></textarea>
+<div class="ai-shortcuts"><button onclick="analyzeCode()">🧠 分析</button><button onclick="optimizeCode()">⚡ 优化</button><button onclick="explainCode()">📖 解释</button></div>
+<div id="aiResult" class="ai-result"></div>
+</main>
+<aside class="panel-right">
+<div class="panel-header"><span>🤖 助手</span><select id="modelSelect" onchange="changeModel()"></select></div>
+<div class="chat-box" id="chatBox"><div class="empty-chat">上传文件或开始提问</div></div>
+<div class="chat-input-area"><textarea id="chatInput" rows="2" placeholder="输入消息或 /指令"></textarea><button onclick="sendChat()">发送</button></div>
+<div class="chat-tools"><button onclick="feedCurrentFile()">📎 投喂当前文件</button><button onclick="clearChat()">清空对话</button></div>
+</aside>
+</div>
+</div>
+<div id="settingsModal" class="modal hidden">
+<div class="modal-content">
+<h2>⚙️ 设置</h2>
+<div class="settings-group">
+<label>默认提供商 <select id="defaultProvider" onchange="updateModelOptions()"><option value="deepseek">DeepSeek</option><option value="openai">OpenAI</option><option value="qwen">通义千问</option><option value="zhipu">智谱GLM</option><option value="moonshot">Moonshot</option><option value="custom">自定义</option></select></label>
+<label>模型 <select id="modelSelectSettings"></select></label>
+<label>自定义 Base URL <input type="text" id="customBaseUrl" /></label>
+<hr><h3>API Keys</h3>
+<label>DeepSeek <input type="password" id="key_deepseek" placeholder="sk-..." /></label>
+<label>OpenAI <input type="password" id="key_openai" placeholder="sk-..." /></label>
+<label>通义千问 <input type="password" id="key_qwen" placeholder="sk-..." /></label>
+<label>智谱GLM <input type="password" id="key_zhipu" placeholder="..." /></label>
+<label>Moonshot <input type="password" id="key_moonshot" placeholder="sk-..." /></label>
+<label>自定义 <input type="password" id="key_custom" placeholder="..." /></label>
+<button onclick="saveSettings()">💾 保存</button>
+<button onclick="testConnection()">🔗 测试连接</button>
+<div id="testResult"></div>
+</div>
+<button onclick="closeSettings()">关闭</button>
+</div>
+</div>
+<div id="devModal" class="modal hidden">
+<div class="modal-content">
+<h3>🔐 开发者登录</h3>
+<input type="text" id="devUser" placeholder="用户名" value="admin" />
+<input type="password" id="devPass" placeholder="密码" />
+<button onclick="devLogin()">登录</button>
+<button onclick="closeDevModal()">取消</button>
+<div id="devMsg"></div>
+</div>
+</div>
+<script>
+let currentWorkspace=null,currentFilePath=null,fileTreeData=[],devLoggedIn=false;
+var modelMap={deepseek:['deepseek-chat','deepseek-coder'],openai:['gpt-4o','gpt-4o-mini','gpt-3.5-turbo'],qwen:['qwen-max','qwen-plus','qwen-turbo'],zhipu:['glm-4-plus','glm-4','glm-3-turbo'],moonshot:['moonshot-v1-8k','moonshot-v1-32k'],custom:['custom-model']};
+window.addEventListener('load',function(){setTimeout(function(){document.getElementById('loader').classList.add('hidden')},600);loadSettings();updateModelSelectUI()});
+function handleUpload(){var input=document.getElementById('fileInput'),files=input.files;if(!files.length)return;var fd=new FormData();for(var i=0;i<files.length;i++)fd.append('file',files[i]);fetch('/api/upload',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){if(d.error){alert('上传失败: '+d.error);return}currentWorkspace=d.workspace;fileTreeData=d.tree;renderFileTree(fileTreeData);if(fileTreeData.length===1&&fileTreeData[0].type==='file')openFile(fileTreeData[0].path);if(d.extracted_text)addChatMessage('system','已加载文件内容')}).catch(function(e){alert('请求失败: '+e)});input.value=''}
+function renderFileTree(tree){var c=document.getElementById('fileTree');if(!tree||tree.length===0){c.innerHTML='<div class="empty-state">暂无文件</div>';return}var html='';var dirs=tree.filter(function(f){return f.type==='dir'});var files=tree.filter(function(f){return f.type==='file'});dirs.forEach(function(d){html+='<div class="file-item dir-item">📁 '+d.name+'</div>'});files.forEach(function(f){var active=(f.path===currentFilePath)?'active':'';var icon=getFileIcon(f.name);html+='<div class="file-item '+active+'" onclick="openFile(\''+f.path+'\')">'+icon+' '+f.name+'</div>'});c.innerHTML=html}
+function getFileIcon(name){var ext=name.split('.').pop().toLowerCase();var map={py:'🐍',js:'📜',html:'🌐',css:'🎨',json:'📦',md:'📝',txt:'📄',cpp:'⚙️',java:'☕',go:'🐹',rs:'🦀',php:'🐘',pdf:'📕',docx:'📘'};return map[ext]||'📄'}
+function openFile(path){if(!currentWorkspace)return;currentFilePath=path;fetch('/api/get_file',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workspace:currentWorkspace,path:path})}).then(function(r){return r.json()}).then(function(d){if(d.error){alert(d.error);return}document.getElementById('codeEditor').value=d.content;document.getElementById('currentFile').innerText=path;renderFileTree(fileTreeData)})}
+function saveCurrentFile(){if(!currentWorkspace||!currentFilePath){alert('请先打开一个文件');return}var content=document.getElementById('codeEditor').value;fetch('/api/save_file',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workspace:currentWorkspace,path:currentFilePath,content:content})}).then(function(r){return r.json()}).then(function(d){if(d.success)alert('保存成功');else alert('保存失败')})}
+function downloadWorkspace(){if(!currentWorkspace){alert('没有工作区');return}fetch('/api/download_workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workspace:currentWorkspace})}).then(function(r){return r.blob()}).then(function(b){var url=URL.createObjectURL(b);var a=document.createElement('a');a.href=url;a.download='workspace.zip';a.click();URL.revokeObjectURL(url)})}
+function clearWorkspace(){if(!confirm('确定清空吗？'))return;currentWorkspace=null;currentFilePath=null;fileTreeData=[];document.getElementById('fileTree').innerHTML='<div class="empty-state">已清空</div>';document.getElementById('codeEditor').value='';document.getElementById('currentFile').innerText='未选择文件'}
+function analyzeCode(){var code=document.getElementById('codeEditor').value;if(!code)return alert('编辑器为空');if(!devLoggedIn)return alert('请先登录开发者模式');fetch('/api/analyze_code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})}).then(function(r){return r.json()}).then(function(d){document.getElementById('aiResult').innerHTML=d.analysis||d.error||'无结果'})}
+function optimizeCode(){var code=document.getElementById('codeEditor').value;if(!code)return alert('编辑器为空');if(!devLoggedIn)return alert('请先登录开发者模式');fetch('/api/optimize_code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})}).then(function(r){return r.json()}).then(function(d){if(d.optimized){document.getElementById('codeEditor').value=d.optimized;document.getElementById('aiResult').innerHTML='✅ 优化完成'}else{document.getElementById('aiResult').innerHTML=d.error||'优化失败'}})}
+function explainCode(){var code=document.getElementById('codeEditor').value;if(!code)return alert('编辑器为空');if(!devLoggedIn)return alert('请先登录开发者模式');fetch('/api/explain_code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})}).then(function(r){return r.json()}).then(function(d){document.getElementById('aiResult').innerHTML=d.explanation||d.error||'无结果'})}
+function sendChat(){var input=document.getElementById('chatInput'),msg=input.value.trim();if(!msg)return;input.value='';addChatMessage('user',msg);fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:msg}],provider:getCurrentProvider(),model:getCurrentModel(),stream:false})}).then(function(r){return r.json()}).then(function(d){if(d.error)addChatMessage('assistant','❌ '+d.error);else{var reply=d.choices?.[0]?.message?.content||'无回复';addChatMessage('assistant',reply)}}).catch(function(e){addChatMessage('assistant','请求失败: '+e)})}
+function addChatMessage(role,content){var box=document.getElementById('chatBox');var empty=box.querySelector('.empty-chat');if(empty)empty.remove();var div=document.createElement('div');div.className='chat-msg '+role;div.innerHTML='<div class="chat-bubble">'+content+'</div>';box.appendChild(div);box.scrollTop=box.scrollHeight}
+function feedCurrentFile(){if(!currentWorkspace||!currentFilePath){alert('请先打开一个文件');return}var content=document.getElementById('codeEditor').value;if(!content)return alert('文件内容为空');var msg='以下是当前文件 '+currentFilePath+' 的内容：\n\n'+content+'\n\n请分析或回答问题。';addChatMessage('user',msg);fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:msg}],provider:getCurrentProvider(),model:getCurrentModel(),stream:false})}).then(function(r){return r.json()}).then(function(d){if(d.error)addChatMessage('assistant','❌ '+d.error);else addChatMessage('assistant',d.choices?.[0]?.message?.content||'无回复')})}
+function clearChat(){document.getElementById('chatBox').innerHTML='<div class="empty-chat">对话已清空</div>'}
+function loadSettings(){fetch('/api/get_settings').then(function(r){return r.json()}).then(function(d){document.getElementById('defaultProvider').value=d.default_provider||'deepseek';document.getElementById('customBaseUrl').value=d.custom_base_url||'';for(var key in d.api_keys){var el=document.getElementById('key_'+key);if(el)el.placeholder='已设置'}updateModelOptions();updateModelSelectUI()})}
+function updateModelOptions(){var provider=document.getElementById('defaultProvider').value;var select=document.getElementById('modelSelectSettings');select.innerHTML='';(modelMap[provider]||['default']).forEach(function(m){var opt=document.createElement('option');opt.value=m;opt.textContent=m;select.appendChild(opt)})}
+function updateModelSelectUI(){var provider=document.getElementById('defaultProvider')?.value||'deepseek';var select=document.getElementById('modelSelect');select.innerHTML='';(modelMap[provider]||['default']).forEach(function(m){var opt=document.createElement('option');opt.value=m;opt.textContent=m;select.appendChild(opt)})}
+function getCurrentProvider(){return document.getElementById('defaultProvider')?.value||'deepseek'}
+function getCurrentModel(){return document.getElementById('modelSelect')?.value||'deepseek-chat'}
+function changeModel(){}
+function saveSettings(){var apiKeys={};['deepseek','openai','qwen','zhipu','moonshot','custom'].forEach(function(p){var el=document.getElementById('key_'+p);if(el&&el.value)apiKeys[p]=el.value});var provider=document.getElementById('defaultProvider').value;var model=document.getElementById('modelSelectSettings').value;var payload={api_keys:apiKeys,default_provider:provider,default_model:model,custom_base_url:document.getElementById('customBaseUrl').value,models:{}};payload.models[provider]=model;fetch('/api/save_settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json()}).then(function(d){alert('设置已保存');updateModelSelectUI()})}
+function testConnection(){var provider=document.getElementById('defaultProvider').value;var keyEl=document.getElementById('key_'+provider);var apiKey=keyEl?keyEl.value:'';if(!apiKey){alert('请先输入该提供商的 API Key');return}var model=document.getElementById('modelSelectSettings').value;fetch('/api/test_connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider:provider,api_key:apiKey,model:model})}).then(function(r){return r.json()}).then(function(d){document.getElementById('testResult').innerText=d.success?'✅ 连接成功':'❌ '+d.error})}
+function openSettings(){document.getElementById('settingsModal').classList.remove('hidden');loadSettings()}
+function closeSettings(){document.getElementById('settingsModal').classList.add('hidden')}
+function toggleDev(){if(devLoggedIn){fetch('/api/dev_logout',{method:'POST'}).then(function(){devLoggedIn=false;updateDevBtn()})}else{document.getElementById('devModal').classList.remove('hidden')}}
+function closeDevModal(){document.getElementById('devModal').classList.add('hidden')}
+function devLogin(){var user=document.getElementById('devUser').value;var pass=document.getElementById('devPass').value;fetch('/api/dev_login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})}).then(function(r){return r.json()}).then(function(d){if(d.success){devLoggedIn=true;updateDevBtn();closeDevModal();alert('登录成功')}else{document.getElementById('devMsg').innerText='登录失败'}})}
+function updateDevBtn(){var btn=document.getElementById('devBtn');if(devLoggedIn){btn.classList.add('active');btn.innerText='🔧 已登录'}else{btn.classList.remove('active');btn.innerText='🔧 开发者'}}
+document.getElementById('chatInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();sendChat()}});
+</script>
+</body>
+  </html>
