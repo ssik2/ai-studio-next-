@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>开发者登录</title>
+<style>
+body{background:#f0f4ff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:system-ui}
+.card{background:white;padding:32px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.08);width:300px}
+input{width:100%;padding:10px;margin:8px 0;border:1px solid #e2e8f0;border-radius:8px}
+button{width:100%;padding:10px;background:#4f46e5;color:white;border:none;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="card"><h2>🔐 开发者登录</h2>
+<form id="loginForm">
+<input type="text" id="username" placeholder="用户名" value="admin">
+<input type="password" id="password" placeholder="密码">
+<button type="submit">登录</button>
+</form>
+<div id="msg"></div>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+ e.preventDefault();
+ const resp=await fetch('/api/dev_login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('username').value,password:document.getElementById('password').value})});
+ const data=await resp.json();
+ if(data.success) location.href='/'; else document.getElementById('msg').innerText='登录失败';
+});
+</script>
+</body>
+</html>
